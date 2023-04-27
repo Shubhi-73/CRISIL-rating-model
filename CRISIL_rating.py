@@ -4,7 +4,11 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import sklearn as sk
 from sklearn.linear_model import LogisticRegression
-
+from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import RFECV
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 filepath = r"Downloads\corporate_rating.csv"
 
@@ -27,27 +31,6 @@ y = df.iloc[:, 0].values
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
-from sklearn.model_selection import train_test_split
-
-
-# print the first five rows
-# print(X.head())
-# x.head()
-
-# print(y.head())
-
-# model = LogisticRegression(solver='lbfgs', multi_class='multinomial',random_state=0)
-# model.fit(x, y)
-# print(x["daysOfSalesOutstanding"])
-
-# scale with feature names
-
-
-# x = pd.DataFrame(scaler.transform(X), columns=X.columns)
-# x_test = pd.DataFrame(scaler.transform(X_test), columns=x.columns)
-
-# print(x["daysOfSalesOutstanding"])
-
 
 model = LogisticRegression(
     penalty="l2",
@@ -58,21 +41,19 @@ model = LogisticRegression(
     C=0.1,
 )
 
-from sklearn.feature_selection import RFECV
-from sklearn.model_selection import StratifiedKFold
 
-# print("Shape:", X.shape)
+# Recursive Feature Selection with cross-validation
 rfecv = RFECV(estimator=model, step=1, cv=StratifiedKFold(5), scoring="accuracy")
 rfecv.fit(X, y)
-# selected_features = [True, False, True, False, True] + [False] * 20
-print("support", rfecv.support_)
-# selected_features = X[:, rfecv.support_]
-# print(selected_features)
-X = X[:, rfecv.support_]
-# print("Selected shape: ", X.shape)
 
-# # Print the optimal number of features
-# print("Optimal number of features : %d" % rfecv.n_features_)
+# shows the features selected with - true
+print("support", rfecv.support_)
+
+X = X[:, rfecv.support_]
+
+
+# Print the optimal number of features
+print("Optimal number of features : %d" % rfecv.n_features_)
 
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -80,25 +61,13 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 
-# Print the selected features
-# print("Selected features : ", X.feature_names[rfecv.support_])
-
+# training the model
 model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
 
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import RepeatedKFold, cross_val_score
-
-rkf = RepeatedKFold(n_splits=10, n_repeats=3, random_state=42)
-scores = cross_val_score(model, X, y, cv=rkf)
-print(scores.mean())
-
 
 print(y_pred)
-
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score, recall_score, f1_score
 
 precision = precision_score(y_test, y_pred, average="macro")
 recall = recall_score(y_test, y_pred, average="macro")
@@ -109,4 +78,4 @@ print("Precision:", precision * 100)
 print("Recall:", recall * 100)
 print("F1-score:", f1 * 100)
 
-print(accuracy_score(y_test, y_pred) * 100)
+print("Accuracy: ", accuracy_score(y_test, y_pred) * 100)
